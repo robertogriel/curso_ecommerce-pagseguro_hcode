@@ -268,3 +268,67 @@
 <script type="text/javascript">
     PagSeguroDirectPayment.setSessionId('<?php echo htmlspecialchars( $pagseguro["id"], ENT_COMPAT, 'UTF-8', FALSE ); ?>');
 </script>
+<script>
+    scripts.push(function(){
+
+        function showError(error){
+
+            let errorMsg;
+
+            console.log(error[0]);
+
+            switch (error[0]) {
+                case "amount out of range: -1.00":
+                    errorMsg = "O valor é menor que R$1,00";
+                break;
+            }
+
+            const alertError = document.querySelector("#alert-error span.msg");
+            alertError.innerHTML = errorMsg;
+            alertError.parentElement.classList.toggle("hide");
+
+        }
+        PagSeguroDirectPayment.getPaymentMethods({
+            amount: parseFloat("<?php echo htmlspecialchars( $order["vltotal"], ENT_COMPAT, 'UTF-8', FALSE ); ?>"),
+            success: function(response) {
+                
+                var tplDebit = Handlebars.compile($("#tpl-payment-debit").html());
+                var tplCredit = Handlebars.compile($("#tpl-payment-credit").html());
+
+                $.each(response.paymentMethods.ONLINE_DEBIT.options, function(index, option){
+                    $("#tab-debito .contents").append(tplDebit({
+                        value: option.name,
+                        image: option.images.MEDIUM.path,
+                        text: option.displayName
+                    }));
+                });
+                $.each(response.paymentMethods.CREDIT_CARD.options, function(index, option){
+                    $("#tab-credito .contents").append(tplCredit({
+                        name: option.name,
+                        image: option.images.MEDIUM.path
+                    }));
+                });
+
+                document.querySelector("#loading").style.display = "none";
+                $("#tabs-methods .nav-link:first").tab('show');
+                document.querySelector("#payment-methods").classList.remove("hide");
+
+            },
+            error: function(response) {
+                var errors = [];
+
+                for (var code in response.errors) {
+                    errors.push(response.errors[code]);
+                }
+
+                
+                showError(errors)
+
+            },
+            complete: function(response) {
+                
+            }
+        });
+        
+    });
+</script>
